@@ -3,38 +3,81 @@
 #include <errno.h>
 #include <syslog.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
 
+#include "globals.h"
 #include "config.h"
 #include "lookupdb.h"
-
-lookupdb DB;
+#include "receiver.h"
+#include "data_queue.h"
 
 int main(int argc, char ** argv) {
 
-    /* Became a daemon process */
-    if(daemon(0, 0)) {
-        perror("Unable to became a daemon process");
-        return 1;
-    }
+    struct sockaddr_in my_addr;
 
     /* Initialize syslog */
-    openlog(TESTDNSD_SYSLOG_IDENT, LOG_PID | LOG_NDELAY, LOG_USER);
+    XXLOG_INIT();
 
     /* Started now */
-    syslog(LOG_INFO, "Started");
+    XXLOG("Starting");
 
+    /* Dealing with lookup database */
     if(lookupdb_init(&DB)) {
-        syslog(LOG_ERR, "Failed initializing lookup database. Exiting");
-        return 2;
+        XXLOG("Failed initializing lookup database. Exiting");
+        exit(1);
     }
 
-    syslog(LOG_INFO, "Starting lookup batabase data load from file");
+    XXLOG("Starting lookup batabase data load from file");
     if(lookupdb_load(&DB, "")) {
-        syslog(LOG_ERR, "Failed loading lookup batabase data from file. Exiting");
-        return 3;
+        XXLOG("Failed loading lookup batabase data from file. Exiting");
+        exit(1);
     }
-    syslog(LOG_INFO, "Finished lookup batabase data load from file. %ld items loaded", lookupdb_size(&DB));
+    XXLOG("Finished lookup batabase data load from file. %ld items loaded", lookupdb_size(&DB));
 
+    /* Dealing with in/out queues */
+    XXLOG("Preparing in/out queues");
+    if(data_queue_init(&INQ, TESTDNSD_INQ_SIZE) ||
+       data_queue_init(&OUTQ, TESTDNSD_OUTQ_SIZE)) {
+        XXLOG("Failed initializing in/out queues");
+        exit(1);
+    }
+
+    /* Dealing with udp socket */
+    XXLOG("Opening receiving socket at %s:%d", TESTDNSD_BIND_ADDR, TESTDNSD_BIND_PORT);
+    SOCKET = socket(AF_INET, SOCK_DGRAM, 0);
+    if(SOCKET == -1) {
+        XXLOG("Failed creating socket");
+        exit(1);
+    }
+    my_addr.sin_family = AF_INET;
+    if(!inet_aton(TESTDNSD_BIND_ADDR, &(my_addr.sin_addr))) {
+	XXLOG("Invalid TESTDNSD_BIND_ADDDR value '%s'. Exiting", TESTDNSD_BIND_ADDR);
+	exit(1);
+    }
+    my_addr.sin_port = htons(TESTDNSD_BIND_PORT);
+    if(bind(SOCKET, (struct sockaddr *) &my_addr, sizeof(my_addr))) {
+	XXLOG("Error binding socket. Exiting (%s)", strerror(errno));
+	exit(1);
+    }
+    XXLOG("Socket opened");
+
+    /* Became a daemon process */
+    if(TESTDNSD_DAEMON) {
+	if(daemon(0, 0)) {
+	    XXLOG("Unable to became a daemon process. Exiting");
+	    exit(1);
+	}
+    }
+
+    /* Receiver infinite loop starts here */
+    receiver();
+
+    /* Finishing up (just in case) */
+    close(SOCKET);
     closelog();
 
     return 0;
