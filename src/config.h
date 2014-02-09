@@ -1,0 +1,20 @@
+#ifndef __TESTDNSD_CONFIG_H__
+#define __TESTDNSD_CONFIG_H__
+
+#ifndef TESTDNSD_SYSLOG_IDENT
+#define TESTDNSD_SYSLOG_IDENT "testdnds"
+#endif /* TESTDNSD_SYSLOG_IDENT */
+
+#ifndef TESTDNSD_BIND_ADDR
+#define TESTDNSD_BIND_ADDR "0.0.0.0"
+#endif /* TESTDNSD_BIND_ADDR */
+
+#ifndef TESTDNSD_BIND_PORT
+#define TESTDNSD_BIND_PORT 53
+#endif /* TESTDNSD_BIND_PORT */
+
+#ifndef TESTDNSD_LOOKUPDB_FILE
+#define TESTDNSD_LOOKUPDB_FILE "/tmp/lookupdb.txt"
+#endif /* TESTDNSD_LOOKUPDB_FILE */
+
+#endif /* __TESTDNSD_CONFIG_H__ */
