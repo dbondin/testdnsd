@@ -9,6 +9,8 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <pthread.h>
+#include <pwd.h>
+#include <grp.h>
 
 #include "globals.h"
 #include "config.h"
@@ -25,12 +27,57 @@ int main(int argc, char ** argv) {
     processor_thread_fn_arg_t prc_args[TESTDNSD_PROC_THREAD_COUNT];
     pthread_t snd_tid;
     struct sockaddr_in my_addr;
+    struct passwd * user_info;
+    struct group * group_info;
 
     /* Initialize syslog */
     XXLOG_INIT();
 
     /* Started now */
     XXLOG("Starting");
+
+    /* Dealing with udp socket */
+    XXLOG("Opening receiving socket at %s:%d", TESTDNSD_BIND_ADDR, TESTDNSD_BIND_PORT);
+    SOCKET = socket(AF_INET, SOCK_DGRAM, 0);
+    if(SOCKET == -1) {
+        XXLOG("Failed creating socket");
+        exit(1);
+    }
+    my_addr.sin_family = AF_INET;
+    if(!inet_aton(TESTDNSD_BIND_ADDR, &(my_addr.sin_addr))) {
+	XXLOG("Invalid TESTDNSD_BIND_ADDDR value '%s'. Exiting", TESTDNSD_BIND_ADDR);
+	exit(1);
+    }
+    my_addr.sin_port = htons(TESTDNSD_BIND_PORT);
+    if(bind(SOCKET, (struct sockaddr *) &my_addr, sizeof(my_addr))) {
+	XXLOG("Error binding socket. Exiting (%s)", strerror(errno));
+	exit(1);
+    }
+    XXLOG("Socket opened");
+
+    /* If running as ROOT - switch to non-privileged user */
+    if(getuid() == 0) {
+	XXLOG("Changing user:group to %s:%s", TESTDNSD_RUN_USER, TESTDNSD_RUN_GROUP);
+	user_info = getpwnam(TESTDNSD_RUN_USER);
+	if(user_info == NULL) {
+	    XXLOG("Can't find user info. Exiting");
+	    exit(1);
+	}
+	group_info = getgrnam(TESTDNSD_RUN_GROUP);
+	if(group_info == NULL) {
+	    XXLOG("Can't find group info. Exiting");
+	    exit(1);
+	}
+	XXLOG("UID:GID = %d:%d", user_info->pw_uid, group_info->gr_gid);
+	if(setgid(group_info->gr_gid)) {
+	    XXLOG("Error changing GID. Exiting");
+	    exit(1);	    
+	}
+	if(setuid(user_info->pw_uid)) {
+	    XXLOG("Error changing UID. Exiting");
+	    exit(1);	    
+	}
+    }
 
     /* Dealing with lookup database */
     if(lookupdb_init(&DB)) {
@@ -52,25 +99,6 @@ int main(int argc, char ** argv) {
         XXLOG("Failed initializing in/out queues");
         exit(1);
     }
-
-    /* Dealing with udp socket */
-    XXLOG("Opening receiving socket at %s:%d", TESTDNSD_BIND_ADDR, TESTDNSD_BIND_PORT);
-    SOCKET = socket(AF_INET, SOCK_DGRAM, 0);
-    if(SOCKET == -1) {
-        XXLOG("Failed creating socket");
-        exit(1);
-    }
-    my_addr.sin_family = AF_INET;
-    if(!inet_aton(TESTDNSD_BIND_ADDR, &(my_addr.sin_addr))) {
-	XXLOG("Invalid TESTDNSD_BIND_ADDDR value '%s'. Exiting", TESTDNSD_BIND_ADDR);
-	exit(1);
-    }
-    my_addr.sin_port = htons(TESTDNSD_BIND_PORT);
-    if(bind(SOCKET, (struct sockaddr *) &my_addr, sizeof(my_addr))) {
-	XXLOG("Error binding socket. Exiting (%s)", strerror(errno));
-	exit(1);
-    }
-    XXLOG("Socket opened");
 
     XXLOG("Creating sender threads");
     if(pthread_create(&snd_tid, NULL, sender_thread_fn, NULL)) {
