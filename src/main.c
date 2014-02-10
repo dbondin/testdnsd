@@ -16,11 +16,14 @@
 #include "receiver.h"
 #include "data_queue.h"
 #include "processor.h"
+#include "sender.h"
 
 int main(int argc, char ** argv) {
 
     int i;
-    pthread_t tids[TESTDNSD_PROC_THREAD_COUNT];
+    pthread_t prc_tids[TESTDNSD_PROC_THREAD_COUNT];
+    processor_thread_fn_arg_t prc_args[TESTDNSD_PROC_THREAD_COUNT];
+    pthread_t snd_tid;
     struct sockaddr_in my_addr;
 
     /* Initialize syslog */
@@ -69,10 +72,18 @@ int main(int argc, char ** argv) {
     }
     XXLOG("Socket opened");
 
+    XXLOG("Creating sender threads");
+    if(pthread_create(&snd_tid, NULL, sender_thread_fn, NULL)) {
+	XXLOG("Error creating sender thread. Exiting");
+	exit(1);
+    }
+    XXLOG("Sender thread created successfully");
+
     XXLOG("Creating processing threads");
     /* Starting processing threads */
     for(i=0; i<TESTDNSD_PROC_THREAD_COUNT; i++) {
-	if(pthread_create(&tids[i], NULL, processor_thread_fn, NULL)) {
+	prc_args[i].prc_id = i;
+	if(pthread_create(&prc_tids[i], NULL, processor_thread_fn, &(prc_args[i]))) {
 	    XXLOG("Error creating processor threads. Exiting");
 	    exit(1);
 	}
