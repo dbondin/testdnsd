@@ -36,7 +36,7 @@ int main(int argc, char ** argv) {
     }
 
     XXLOG("Starting lookup batabase data load from file");
-    if(lookupdb_load(&DB, "")) {
+    if(lookupdb_load(&DB, TESTDNSD_LOOKUPDB_FILE)) {
         XXLOG("Failed loading lookup batabase data from file. Exiting");
         exit(1);
     }

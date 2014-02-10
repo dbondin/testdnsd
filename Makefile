@@ -5,7 +5,7 @@ OBJS = $(SOURCES:.c=.o)
 CFLAGS = -Wall -O0 -g
 LDFLAGS = 
 
-all: $(TARGET)
+all: $(TARGET) dbgen/dbgen
 
 %.o: %.c
 	$(CC) -o $@ $(CFLAGS) -c $<
@@ -13,5 +13,9 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(LDFLAGS) $^ -lpthread
 
+dbgen/dbgen:
+	$(MAKE) -C dbgen
+
 clean:
 	rm -rf $(TARGET) $(OBJS)
+	$(MAKE) -C dbgen clean

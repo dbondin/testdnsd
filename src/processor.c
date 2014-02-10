@@ -2,6 +2,7 @@
 #include "globals.h"
 #include "processor.h"
 #include "dns_header.h"
+#include "lookupdb.h"
 
 void qname2str(const char * qname, char * str) {
     int i = 0;
@@ -28,6 +29,7 @@ void * processor_thread_fn(void * args) {
     data_queue_element dqe;
     dns_question dnsq;
     char name[TESTDNSD_MAX_PACKET_SIZE];
+    lookupdb_addr * ldb_addr;
 
     while(1) {
 	if(data_queue_get_data(&INQ, &dqe)) {
@@ -78,8 +80,17 @@ void * processor_thread_fn(void * args) {
 		    if(dnsq.qtype == 1 /* 'A' - the only one supported for now */
 		       && dnsq.qclass == 1 /* 'IN' */) {
 			/* Search for a data in DB  */
-			
-			//TODO continue code here !!! 
+			ldb_addr = lookupdb_search(&DB, name);
+			if(ldb_addr != NULL) {
+#if TESTDNSD_DEBUG == 1
+			    XXLOG_DEBUG("Processor: FOUND");
+#endif /* TESTDNSD_DEBUG == 1 */
+			}
+			else {
+#if TESTDNSD_DEBUG == 1
+			    XXLOG_DEBUG("Processor: NOT FOUND");
+#endif /* TESTDNSD_DEBUG == 1 */
+			}
 		    }
 		}
 	    }
@@ -89,7 +100,7 @@ void * processor_thread_fn(void * args) {
 	//TODO send error response here !!!
 
 #if TESTDNSD_DEBUG == 1
-	XXLOG_DEBUG("Error response will be sent");
+	XXLOG_DEBUG("Processor: Error response will be sent");
 #endif /* TESTDNSD_DEBUG == 1 */
     }
 
