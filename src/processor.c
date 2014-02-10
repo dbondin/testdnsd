@@ -131,9 +131,47 @@ void qname2str(const char * qname, char * str) {
 
 /* static */
 void prepare_response_found(data_queue_element * dqe, lookupdb_addr * ldb_addr) {
-    
+    int ancount = 0;
+    int off = dqe->data_len; /* Initial offset to the end of original data */
+    dns_header * ph = (dns_header *) dqe->data;
+    struct in_addr * addr;
+
+    ph->flags = htons(0x8100); /* Set response flags in header */
+
+    while(ldb_addr != NULL &&
+	  off <= TESTDNSD_MAX_PACKET_SIZE - 12 /* ref to name - 2 bytes */ - sizeof(struct in_addr)) {
+	dqe->data[off++] = 0xc0; /* reference to name in question (2 bytes) */
+	dqe->data[off++] = 0x0c; /* ... */
+	dqe->data[off++] = 0x00; /* type = A (2 bytes) */
+	dqe->data[off++] = 0x01; /* ... */
+	dqe->data[off++] = 0x00; /* class = IN (2 bytes) */
+	dqe->data[off++] = 0x01; /* ... */
+	dqe->data[off++] = 0x00; /* ttl = 0 (4 bytes) */
+	dqe->data[off++] = 0x00; /* ... */
+	dqe->data[off++] = 0x00; /* ... */
+	dqe->data[off++] = 0x00; /* ... */
+	dqe->data[off++] = 0x00; /* address length (2 bytes) */
+	dqe->data[off++] = 0x04; /* ... */
+
+	addr = (struct in_addr *) &(dqe->data[off]);
+	*addr = ldb_addr->addr;
+	off += sizeof(struct in_addr);
+	
+	ldb_addr = ldb_addr->next; /* Go to the next address */
+
+	ancount ++;
+    }
+
+    /* Update answers count in header */
+    ph->ancount = htons(ancount);
+
+    /* Update the size of the message */
+    dqe->data_len = off;
 }
 
 /* static */
 static void prepare_response_not_found(data_queue_element * dqe) {
+    dns_header * ph = (dns_header *) dqe->data;
+
+    ph->flags = htons(0x8103); /* Set NOT-FOUND response flags in header */
 }

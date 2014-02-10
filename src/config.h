@@ -6,7 +6,7 @@
 #endif /* TESTDNSD_DAEMON */
 
 #ifndef TESTDNSD_DEBUG
-#define TESTDNSD_DEBUG 0
+#define TESTDNSD_DEBUG 1
 #endif /* TESTDNSD_DEBUG */
 
 #ifndef TESTDNSD_SYSLOG_IDENT

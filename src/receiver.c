@@ -39,7 +39,7 @@ void receiver() {
 	    } 
 	}
 
-	XXLOG("Receiver receives %d bytes", bytes_read);
+	XXLOG_DEBUG("Receiver receives %d bytes", bytes_read);
 
 	if(bytes_read > 0) {
 	    XXLOG_DEBUG("Putting data to the queue");
