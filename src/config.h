@@ -10,7 +10,7 @@
 #endif /* TESTDNSD_DEBUG */
 
 #ifndef TESTDNSD_SYSLOG_IDENT
-#define TESTDNSD_SYSLOG_IDENT "testdnds"
+#define TESTDNSD_SYSLOG_IDENT "testdnsd"
 #endif /* TESTDNSD_SYSLOG_IDENT */
 
 #ifndef TESTDNSD_BIND_ADDR
