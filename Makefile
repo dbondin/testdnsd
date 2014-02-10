@@ -11,7 +11,7 @@ all: $(TARGET)
 	$(CC) -o $@ $(CFLAGS) -c $<
 
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $(LDFLAGS) $^
+	$(CC) -o $@ $(LDFLAGS) $^ -lpthread
 
 clean:
 	rm -rf $(TARGET) $(OBJS)

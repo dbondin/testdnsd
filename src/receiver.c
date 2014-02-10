@@ -9,8 +9,6 @@
 #include "receiver.h"
 #include "dns_header.h"
 
-#define RECEIVER_DEBUG 1
-
 void receiver() {
 
     ssize_t bytes_read;
@@ -22,9 +20,7 @@ void receiver() {
 
     while(1) {
 
-#ifdef RECEIVER_DEBUG
-	XXLOG("Waiting for data");
-#endif /* RECEIVER_DEBUG */
+	XXLOG_DEBUG("Waiting for data");
 
 	bytes_read = recvfrom(SOCKET,
 			      (void *) read_buffer,
@@ -46,17 +42,13 @@ void receiver() {
 	XXLOG("Receiver receives %d bytes", bytes_read);
 
 	if(bytes_read > 0) {
-#ifdef RECEIVER_DEBUG
-	XXLOG("Putting data to the queue");
-#endif /* RECEIVER_DEBUG */
+	    XXLOG_DEBUG("Putting data to the queue");
 	    if(data_queue_put_data(&INQ, &src_addr, (void *) read_buffer, bytes_read)) {
 		XXLOG("Receiver error: input queue operation failure");
 	    }
-#ifdef RECEIVER_DEBUG
 	    else {
-		XXLOG("Putting data to the queue success");
+		XXLOG_DEBUG("Putting data to the queue success");
 	    }
-#endif /* RECEIVER_DEBUG */
 	}
     }
 

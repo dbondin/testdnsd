@@ -10,16 +10,8 @@ extern int SOCKET;
 extern data_queue INQ;
 extern data_queue OUTQ;
 
-#ifndef XXLOG
-#if TESTDNSD_DAEMON == 1
- #include<syslog.h>
- #define XXLOG_INIT() openlog(TESTDNSD_SYSLOG_IDENT, LOG_PID | LOG_NDELAY, LOG_USER)
- #define XXLOG(...) syslog ( LOG_INFO , __VA_ARGS__ )
-#else
- #include<stdio.h>
- #define XXLOG_INIT() {}
- #define XXLOG(...) printf ( __VA_ARGS__ )
-#endif /* TESTDNSD_DAEMON == 1 */
-#endif /* XXLOG */
+void XXLOG_INIT();
+void XXLOG(const char * format, ...);
+void XXLOG_DEBUG(const char * format, ...);
 
 #endif /* __TESTDNSD_GLOBALS_H__ */

@@ -8,15 +8,19 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "globals.h"
 #include "config.h"
 #include "lookupdb.h"
 #include "receiver.h"
 #include "data_queue.h"
+#include "processor.h"
 
 int main(int argc, char ** argv) {
 
+    int i;
+    pthread_t tids[TESTDNSD_PROC_THREAD_COUNT];
     struct sockaddr_in my_addr;
 
     /* Initialize syslog */
@@ -64,6 +68,16 @@ int main(int argc, char ** argv) {
 	exit(1);
     }
     XXLOG("Socket opened");
+
+    XXLOG("Creating processing threads");
+    /* Starting processing threads */
+    for(i=0; i<TESTDNSD_PROC_THREAD_COUNT; i++) {
+	if(pthread_create(&tids[i], NULL, processor_thread_fn, NULL)) {
+	    XXLOG("Error creating processor threads. Exiting");
+	    exit(1);
+	}
+    }
+    XXLOG("%d processing threads created successfully", i);
 
     /* Became a daemon process */
     if(TESTDNSD_DAEMON) {
